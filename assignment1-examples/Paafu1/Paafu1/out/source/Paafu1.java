@@ -109,10 +109,11 @@ PanZoomMap panZoomMap;
     /* 
       Use the max and min areas here -- lerp between
     */
-    float area = populationTable.getRow(i).getFloat(6) / 50000;
+    float scale = 50000;
+    float area = populationTable.getRow(i).getFloat(6) / scale;
 
-    float scaled_min = minArea / 50000;
-    float scaled_max = maxArea / 50000;
+    float scaled_min = minArea / scale;
+    float scaled_max = maxArea / scale;
 
     // println(scaled_min, scaled_max);
 
@@ -343,7 +344,7 @@ class PanZoomMap extends PanZoomPage {
     minLongitude = minLong;
     maxLongitude = maxLong;
     
-    mapScale = 1;
+    mapScale = .1f;
     mapTranslateX = 0;
     mapTranslateY = 0;
     
