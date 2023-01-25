@@ -25,6 +25,7 @@ PanZoomMap panZoomMap;
 
 
 // === PROCESSING BUILT-IN FUNCTIONS ===
+ArrayList<Float[]> pairs;
 void setup() {
   // size of the graphics window
   size(1600,900);
@@ -32,6 +33,8 @@ void setup() {
   // load data in from disk and do any data processing
   loadRawDataTables();
   computeDerivedData();
+
+  frameRate(60);
   
   // these coordinates define a rectangular region for the map that happens to be
   // centered around Micronesia
@@ -39,13 +42,30 @@ void setup() {
   ellipseMode(RADIUS);
 
   setup_ui_array();
+
+  pairs = new ArrayList<Float[]>();
+  for (int i = 0; i < locationTable.getRowCount(); i++) 
+  {
+    TableRow loc_row = locationTable.getRow(i);
+    String island_name = loc_row.getString(0);
+    float lat = loc_row.getFloat(1);
+    float lon = loc_row.getFloat(2);
+    float area = populationTable.getRow(i).getFloat(6);
+
+    float ind = (float) i;
+    Float[] f = {lon, lat, area, ind};
+    pairs.add(f);
+  }
+
+  Collections.sort(pairs, new IslandComparator());
 }
 
 class UIValue
 {
   String name;
   float lon, lat, area, ulx, uly, brx, bry;
-  public UIValue(String name, float lon, float lat, float area)
+  float curr_rad;
+  public UIValue(String name, float lat, float lon, float area)
   {
     this.name = name;
     this.lon = lon;
@@ -59,6 +79,11 @@ class UIValue
     this.uly = uly;
     this.brx = brx;
     this.bry = bry;
+  }
+
+  public void setRad(float rad)
+  {
+    this.curr_rad = rad;
   }
 }
 
@@ -92,6 +117,7 @@ void setup_ui_array()
 
 void draw_ui()
 {
+  stroke(100);
   fill(40);
   rect(
     ui_coords[0],
@@ -99,7 +125,6 @@ void draw_ui()
     ui_coords[2],
     ui_coords[3]
   );
-
   fill(100, 200, 30);
   textAlign(CENTER);
   textFont(ui_head, 24);
@@ -158,6 +183,37 @@ void draw_ui()
   }
 }
 
+void draw_arrow()
+{
+  if (arrow_island != null)
+  {
+    float cx = panZoomMap.longitudeToScreenX(arrow_island.lon);
+    float cy = panZoomMap.latitudeToScreenY(arrow_island.lat);
+
+    cy -= arrow_island.curr_rad;
+    stroke(0, 255, 255);
+    line(
+      cx,
+      cy - (height / 100),
+      cx,
+      cy - (height / 4)
+    );
+
+    line(
+      cx,
+      cy - (height / 100),
+      cx - (width / 100),
+      cy - (height / 30)
+    );
+    line(
+      cx,
+      cy - (height / 100),
+      cx + (width / 100),
+      cy - (height / 30)
+    );
+  }
+}
+
 void draw() {
   // clear the screen
   background(0);
@@ -191,22 +247,19 @@ void draw() {
   /*
     Layout of the data is <name_string> <lat_float> <long_float>
   */
-  ArrayList<Float[]> pairs = new ArrayList<Float[]>();
-  for (int i = 0; i < locationTable.getRowCount(); i++) 
-  {
-    TableRow loc_row = locationTable.getRow(i);
-    String island_name = loc_row.getString(0);
-    float lat = loc_row.getFloat(1);
-    float lon = loc_row.getFloat(2);
 
-    float cx = panZoomMap.longitudeToScreenX(lon);
-    float cy = panZoomMap.latitudeToScreenY(lat);
+  for (int i = 0; i < num_islands; i++)
+  {
+    Float[] f = pairs.get(i);
+
+    float cx = panZoomMap.longitudeToScreenX(f[0]);
+    float cy = panZoomMap.latitudeToScreenY(f[1]);
 
     /* 
       Use the max and min areas here -- lerp between
     */
     float scale = 50000;
-    float area = populationTable.getRow(i).getFloat(6) / scale;
+    float area = f[2] / scale;
 
     float scaled_min = minArea / scale;
     float scaled_max = maxArea / scale;
@@ -217,20 +270,37 @@ void draw() {
 
     float rad = panZoomMap.mapLengthToScreenLength(lerp(scaled_min, scaled_max, area_normalized)) / 2.0;
 
-    Float[] f = {cx, cy, rad};
-    pairs.add(f);
+    int ind = f[3].intValue();
+    ui[ind].setRad(rad);
+
+    fill(200, 0, 200);
+    circle(cx, cy, rad);
   }
 
-  Collections.sort(pairs, new IslandComparator());
-
-  for (int i = 0; i < locationTable.getRowCount(); i++)
+  if (show_arrow)
   {
-    Float[] f = pairs.get(i);
-    fill(200, 0, 200);
-    circle(f[0], f[1], f[2]);
+    draw_arrow();
   }
 
   draw_ui();
+
+  float m_lon = panZoomMap.screenXtoLongitude(last_mouseX);
+  float m_lat = panZoomMap.screenYtoLatitude(last_mouseY);
+  if (m_lon >= minLongitude &&
+      m_lon <= maxLongitude &&
+      m_lat >= minLatitude &&
+      m_lat <= maxLatitude)
+  {
+    textFont(ui_head, 10);
+    textAlign(LEFT);
+    fill(0, 255, 255);
+    String put = "" + m_lat + ", " + m_lon + "";
+    text(
+      put,
+      last_mouseX,
+      last_mouseY
+    );
+  }
 }
 
 public class IslandComparator implements Comparator<Float[]>
@@ -249,7 +319,16 @@ void keyPressed() {
   }
 }
 
+float last_mouseX = 0;
+float last_mouseY = 0;
+void mouseMoved()
+{
+  last_mouseX = mouseX;
+  last_mouseY = mouseY;
+}
 
+boolean show_arrow = false;
+UIValue arrow_island = null;
 void mousePressed() {
   panZoomMap.mousePressed();
   if (mouseX >= ui_coords[0] && 
@@ -257,7 +336,36 @@ void mousePressed() {
       mouseY >= ui_coords[1] &&
       mouseY <= ui_coords[3])
   {
+    if (ui_open)
+    {
+      arrow_island = null;
+      show_arrow = false;
+    }
     ui_open = !ui_open;
+  }
+  else if (ui_open)
+  {
+    for (UIValue u : ui)
+    {
+      if (mouseX >= u.ulx &&
+          mouseX <= u.brx &&
+          mouseY >= u.uly &&
+          mouseY <= u.bry)
+      {
+        if (show_arrow &&
+            arrow_island != null &&
+            u.name.compareTo(arrow_island.name) == 0)
+        {
+          show_arrow = false;
+          arrow_island = null;
+        }
+        else
+        {
+          show_arrow = true;
+          arrow_island = u;
+        }
+      }
+    }
   }
 }
 
