@@ -37,24 +37,125 @@ void setup() {
   // centered around Micronesia
   panZoomMap = new PanZoomMap(5.2, 138.0, 10.0, 163.1); 
   ellipseMode(RADIUS);
+
+  setup_ui_array();
 }
 
+class UIValue
+{
+  String name;
+  float lon, lat, area, ulx, uly, brx, bry;
+  public UIValue(String name, float lon, float lat, float area)
+  {
+    this.name = name;
+    this.lon = lon;
+    this.lat = lat;
+    this.area = area;
+  }
+
+  public void setRectBounds(float ulx, float uly, float brx, float bry)
+  {
+    this.ulx = ulx;
+    this.uly = uly;
+    this.brx = brx;
+    this.bry = bry;
+  }
+}
+
+UIValue[] ui;
+Float[] ui_coords = new Float[4];
+int num_islands;
+boolean ui_open = false;
+PFont ui_head;
+void setup_ui_array()
+{
+  ui_coords[0] = 0.0;
+  ui_coords[1] = 0.0;
+  ui_coords[2] = width / 7.0;
+  ui_coords[3] = height / 18.0;
+
+  num_islands = locationTable.getRowCount();
+  ui = new UIValue[num_islands];
+  for (int i = 0; i < num_islands; i++)
+  {
+    TableRow cur = locationTable.getRow(i);
+    ui[i] = new UIValue(
+      cur.getString(0),
+      cur.getFloat(1),
+      cur.getFloat(2),
+      populationTable.getRow(i).getFloat(6)
+    );
+  }
+
+  ui_head = createFont("Times New Roman", 12, true);
+}
+
+void draw_ui()
+{
+  fill(40);
+  rect(
+    ui_coords[0],
+    ui_coords[1],
+    ui_coords[2],
+    ui_coords[3]
+  );
+
+  fill(100, 200, 30);
+  textAlign(CENTER);
+  textFont(ui_head, 24);
+  text("Islands (Click)", ui_coords[2]/2, ui_coords[3]/1.5);
+  textFont(ui_head, 12);
+  fill(40);
+  if (ui_open)
+  {
+    int curr_isle = 0;
+    float jump = (height - ui_coords[3]) / (num_islands*0.5);
+    for (int i = 0; i < num_islands / 2; i++)
+    {
+      for (int j = 0; j < 2; j++)
+      {
+        ui[curr_isle].setRectBounds(
+          j*ui_coords[2]*0.5,
+          ui_coords[3] + i*jump,
+          (j+1)*ui_coords[2]*0.5,
+          ui_coords[3] + (i+1)*jump
+        );
+        fill(40);
+        rect(
+          ui[curr_isle].ulx,
+          ui[curr_isle].uly,
+          ui[curr_isle].brx,
+          ui[curr_isle].bry
+        );
+        fill(100, 200, 30);
+        String[] toks = ui[curr_isle].name.split(" ", 2);
+        for (int k = 0; k < toks.length; k++)
+        {
+          text(
+            toks[k], 
+            lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5),
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.4 + k*0.4)
+          );
+        }
+        curr_isle++;
+      }
+    }
+  }
+}
 
 void draw() {
   // clear the screen
   background(0);
   
   // draw the bounds of the map
-  fill(20);
-  stroke(50);
+  fill(40);
+  stroke(100);
   rectMode(CORNERS);
   float x1 = panZoomMap.longitudeToScreenX(138.0);
   float y1 = panZoomMap.latitudeToScreenY(5.2);
   float x2 = panZoomMap.longitudeToScreenX(163.1);
   float y2 = panZoomMap.latitudeToScreenY(10.0);
   rect(x1, y1, x2, y2);
-  
-  
   
   // Example of drawing just one island.  You'll want to replace this with your own visualization.
   
@@ -113,6 +214,8 @@ void draw() {
     fill(200, 0, 200);
     circle(f[0], f[1], f[2]);
   }
+
+  draw_ui();
 }
 
 public class IslandComparator implements Comparator<Float[]>
@@ -134,6 +237,13 @@ void keyPressed() {
 
 void mousePressed() {
   panZoomMap.mousePressed();
+  if (mouseX >= ui_coords[0] && 
+      mouseX <= ui_coords[2] &&
+      mouseY >= ui_coords[1] &&
+      mouseY <= ui_coords[3])
+  {
+    ui_open = !ui_open;
+  }
 }
 
 
