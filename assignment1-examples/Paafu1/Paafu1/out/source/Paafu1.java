@@ -149,14 +149,29 @@ PFont ui_head;
         );
         fill(100, 200, 30);
         String[] toks = ui[curr_isle].name.split(" ", 2);
-        for (int k = 0; k < toks.length; k++)
+        if (toks.length == 2)
         {
           text(
-            toks[k], 
+            toks[0], 
             lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5f),
-            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.4f + k*0.4f)
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.4f)
+          );
+
+          text(
+            toks[1], 
+            lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5f),
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.8f)
           );
         }
+        else 
+        {
+          text(
+            toks[0], 
+            lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5f),
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.6f)
+          );
+        }
+          
         curr_isle++;
       }
     }

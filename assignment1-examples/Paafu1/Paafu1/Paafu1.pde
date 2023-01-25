@@ -129,14 +129,29 @@ void draw_ui()
         );
         fill(100, 200, 30);
         String[] toks = ui[curr_isle].name.split(" ", 2);
-        for (int k = 0; k < toks.length; k++)
+        if (toks.length == 2)
         {
           text(
-            toks[k], 
+            toks[0], 
             lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5),
-            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.4 + k*0.4)
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.4)
+          );
+
+          text(
+            toks[1], 
+            lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5),
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.8)
           );
         }
+        else 
+        {
+          text(
+            toks[0], 
+            lerp(ui[curr_isle].ulx, ui[curr_isle].brx, 0.5),
+            lerp(ui[curr_isle].uly, ui[curr_isle].bry, 0.6)
+          );
+        }
+          
         curr_isle++;
       }
     }
