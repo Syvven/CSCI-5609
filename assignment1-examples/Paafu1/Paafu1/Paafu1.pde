@@ -28,7 +28,15 @@ int num_islands;
 boolean ui1_open = false;
 boolean ui2_open = false;
 PFont ui_head;
-color ui_start_color, ui_end_color;
+color ui_start_color, ui_end_color, ui_mid_color;
+
+ArrayList<Float[]> ui_1980, ui_1994, ui_2000, ui_2010, curr_pop_year;
+color[] color_1980, color_1994, color_2000, color_2010, curr_year_colors;
+
+boolean using_1980 = true;
+boolean using_1994 = false;
+boolean using_2000 = false;
+boolean using_2010 = false;
 
 public class IslandComparator implements Comparator<Float[]>
 {
@@ -85,23 +93,31 @@ void setup() {
 }
 
 /* color will be based on population */
-ArrayList<Float[]> ui_1980;
-ArrayList<Float[]> ui_1994;
-ArrayList<Float[]> ui_2000;
-ArrayList<Float[]> ui_2010;
 void setup_ui_array()
 {
+  num_islands = locationTable.getRowCount();
+
   ui_1980 = new ArrayList<Float[]>();
   ui_1994 = new ArrayList<Float[]>();
   ui_2000 = new ArrayList<Float[]>();
   ui_2010 = new ArrayList<Float[]>();
+
+  color_1980 = new color[num_islands];
+  color_1994 = new color[num_islands];
+  color_2000 = new color[num_islands];
+  color_2010 = new color[num_islands];
+
+  ui_start_color = color(255, 255, 255);
+  ui_end_color = color(255, 0, 0);
+  ui_mid_color = lerpColor(ui_start_color, ui_end_color, 0.5);
+
+  float thresh = 1500;
 
   ui_coords[0] = 0.0;
   ui_coords[1] = 0.0;
   ui_coords[2] = width / 7.0;
   ui_coords[3] = height / 18.0;
 
-  num_islands = locationTable.getRowCount();
   ui = new UIValue[num_islands];
   for (int i = 0; i < num_islands; i++)
   {
@@ -134,17 +150,133 @@ void setup_ui_array()
     Collections.sort(ui_2010, new PopulationComparator());
   }
 
-  curr_pop_year = ui_1980;
-
   for (int i = 0; i < num_islands; i++)
   {
-    println(curr_pop_year.get(i)[1]);
+    color start = ui_start_color;
+    color end = ui_end_color;
+
+    float ui80 = ui[ui_1980.get(i)[0].intValue()].pop_1980;
+    float ui94 = ui[ui_1994.get(i)[0].intValue()].pop_1994;
+    float ui00 = ui_2000.get(i)[1];
+    float ui10 = ui_2010.get(i)[1];
+
+
+    // float ui80norm = (ui80 - minPop1980) / (maxPop1980 - minPop1980);
+    // float ui94norm = (ui94 - minPop1994) / (maxPop1994 - minPop1994);
+    // float ui00norm = (ui00 - minPop2000) / (maxPop2000 - minPop2000);
+    // float ui10norm = (ui10 - minPop2010) / (maxPop2010 - minPop2010);
+    float max, min;
+    if (ui80 > thresh)
+    {
+      max = maxPop1980;
+      min = thresh;
+    } 
+    else 
+    {
+      max = thresh;
+      min = minPop1980;
+    }
+    float ui80norm = (ui80 - min) / (max-min);
+
+    if (ui94 > thresh)
+    {
+      max = maxPop1994;
+      min = thresh;
+    } 
+    else 
+    {
+      max = thresh;
+      min = minPop1994;
+    }
+    float ui94norm = (ui94 - min) / (max-min);
+
+    if (ui00 > thresh)
+    {
+      max = maxPop2000;
+      min = thresh;
+    } 
+    else 
+    {
+      max = thresh;
+      min = minPop2000;
+    }
+    float ui00norm = (ui00 - min) / (max-min);
+
+    if (ui10 > thresh)
+    {
+      max = maxPop2010;
+      min = thresh;
+    } 
+    else 
+    {
+      max = thresh;
+      min = minPop2010;
+    }
+    float ui10norm = (ui10 - min) / (max-min);
+    if (ui10 > thresh)
+    {
+      println("Above Thresh", ui10norm);
+    } 
+    else 
+    {
+      println("Below Thresh", ui10norm);
+    }
+
+    if (ui80 > thresh) 
+    {
+      start = ui_mid_color;
+      end = ui_end_color;
+    }
+    else
+    {
+      start = ui_start_color;
+      end = ui_mid_color;
+    }
+    color_1980[i] = lerpColor(start, end, ui80norm);
+
+    if (ui94 > thresh)
+    {
+      start = ui_mid_color;
+      end = ui_end_color;
+    }
+    else
+    {
+      start = ui_start_color;
+      end = ui_mid_color;
+    }
+    color_1994[i] = lerpColor(start, end, ui94norm);
+
+    if (ui00 > thresh)
+    {
+      start = ui_mid_color;
+      end = ui_end_color;
+    }
+    else
+    {
+      start = ui_start_color;
+      end = ui_mid_color;
+    }
+    color_2000[i] = lerpColor(start, end, ui00norm);
+
+    if (ui10 > thresh)
+    {
+      start = ui_mid_color;
+      end = ui_end_color;
+    }
+    else
+    {
+      start = ui_start_color;
+      end = ui_mid_color;
+    }
+    color_2010[i] = lerpColor(start, end, ui10norm);
   }
+
+  curr_pop_year = ui_1980;
+  curr_year_colors = color_1980;
 
   ui_head = createFont("Times New Roman", 12, true);
 }
 
-ArrayList<Float[]> curr_pop_year;
 void draw_ui()
 {
   stroke(80);
@@ -169,10 +301,109 @@ void draw_ui()
   textFont(ui_head, 12);
   fill(40);
   if (ui2_open)
-  {
+  { 
+    if (using_1980)
+      fill(100, 100, 0);
+    rect(
+      ui_coords[2],
+      ui_coords[3],
+      ui_coords[2]*2,
+      ui_coords[3]*1.7
+    );
+    if (using_1980)
+      fill(40);
+    if (using_1994)
+      fill(100, 100, 0);
+    rect(
+      ui_coords[2],
+      ui_coords[3]*1.7,
+      ui_coords[2]*2,
+      ui_coords[3]*2.4
+    );
+    if (using_1994)
+      fill(40);
+    if (using_2000)
+      fill(100, 100, 0);
+    rect(
+      ui_coords[2],
+      ui_coords[3]*2.4,
+      ui_coords[2]*2,
+      ui_coords[3]*3.1
+    );
+    if (using_2000)
+      fill(40);
+    if (using_2010)
+      fill(100, 100, 0);
+    rect(
+      ui_coords[2],
+      ui_coords[3]*3.1,
+      ui_coords[2]*2,
+      ui_coords[3]*3.8
+    );
+    if (using_2010)
+      fill(40);
+    rect(
+      ui_coords[2],
+      ui_coords[3]*3.8,
+      ui_coords[2]*2,
+      ui_coords[3]*4.5
+    );
+    fill(100, 200, 30);
+    if (arrow_island != null)
+    {
+      if (using_1980)
+      {
+        text(
+          arrow_island.name + ": " + arrow_island.pop_1980, 
+          ui_coords[2] * 3 / 2, 
+          ui_coords[3] * 4.25
+        );
+      }
+      else if (using_1994)
+      {
+        text(
+          arrow_island.name + ": " + arrow_island.pop_1994, 
+          ui_coords[2] * 3 / 2, 
+          ui_coords[3] * 4.25
+        );
+      }
+      else if (using_2000)
+      {
+        text(
+          arrow_island.name + ": " + arrow_island.pop_2000, 
+          ui_coords[2] * 3 / 2, 
+          ui_coords[3] * 4.25
+        );
+      }
+      else if (using_2010)
+      {
+        text(
+          arrow_island.name + ": " + arrow_island.pop_2010, 
+          ui_coords[2] * 3 / 2, 
+          ui_coords[3] * 4.25
+        );
+      }
+    }
+    else 
+    {
+      text(
+          "No Island Selected", 
+          ui_coords[2] * 3 / 2, 
+          ui_coords[3] * 4.25
+        );
+    }
+    text("Population (1980)", ui_coords[2] * 3 / 2, ui_coords[3] * 1.45);
+    text("Population (1994)", ui_coords[2] * 3 / 2, ui_coords[3] * 2.15);
+    text("Population (2000)", ui_coords[2] * 3 / 2, ui_coords[3] * 2.85);
+    text("Population (2010)", ui_coords[2] * 3 / 2, ui_coords[3] * 3.55);
 
   }
-
+  fill(40);
+  for (int i = 0; i < num_islands; i++)
+  {
+    int c = curr_pop_year.get(i)[0].intValue();
+    ui[c].setColor(curr_year_colors[i]);
+  }
   if (ui1_open)
   {
     int counter = 0;
@@ -188,14 +419,17 @@ void draw_ui()
           (j+1)*ui_coords[2]*0.5,
           ui_coords[3] + (i+1)*jump
         );
-        fill(40);
+        if (arrow_island != null && arrow_island.name.compareTo(ui[curr_isle].name) == 0)
+          fill(100, 100, 0);
+        else
+          fill(40);
         rect(
           ui[curr_isle].ulx,
           ui[curr_isle].uly,
           ui[curr_isle].brx,
           ui[curr_isle].bry
         );
-        fill(100, 200, 30);
+        fill(curr_year_colors[counter]);
         String[] toks = ui[curr_isle].name.split(" ", 2);
         if (toks.length == 2)
         {
@@ -234,7 +468,7 @@ void draw_arrow()
     float cy = panZoomMap.latitudeToScreenY(arrow_island.lat);
 
     cy -= arrow_island.curr_rad;
-    stroke(0, 255, 255);
+    stroke(arrow_island.curr_color);
     line(
       cx,
       cy - (height / 100),
@@ -300,7 +534,7 @@ void draw() {
     int ind = f[3].intValue();
     ui[ind].setRad(rad);
 
-    fill(200, 0, 200);
+    fill(ui[ind].curr_color);
     circle(cx, cy, rad);
   }
 
@@ -311,8 +545,8 @@ void draw() {
 
   draw_ui();
 
-  float m_lon = panZoomMap.screenXtoLongitude(last_mouseX);
-  float m_lat = panZoomMap.screenYtoLatitude(last_mouseY);
+  float m_lon = panZoomMap.screenXtoLongitude(mouseX);
+  float m_lat = panZoomMap.screenYtoLatitude(mouseY);
   if (m_lon >= minLongitude &&
       m_lon <= maxLongitude &&
       m_lat >= minLatitude &&
@@ -320,12 +554,12 @@ void draw() {
   {
     textFont(ui_head, 10);
     textAlign(LEFT);
-    fill(0, 255, 255);
+    fill(100, 200, 30);
     String put = "" + m_lat + ", " + m_lon + "";
     text(
       put,
-      last_mouseX,
-      last_mouseY
+      mouseX,
+      mouseY
     );
   }
 }
@@ -336,30 +570,18 @@ void keyPressed() {
   }
 }
 
-float last_mouseX = 0;
-float last_mouseY = 0;
-void mouseMoved()
-{
-  last_mouseX = mouseX;
-  last_mouseY = mouseY;
-}
+// float last_mouseX = 0;
+// float last_mouseY = 0;
+// void mouseMoved()
+// {
+//   last_mouseX = mouseX;
+//   last_mouseY = mouseY;
+// }
 
 boolean show_arrow = false;
 UIValue arrow_island = null;
 void mousePressed() {
   panZoomMap.mousePressed();
-  if (mouseX >= ui_coords[0] && 
-      mouseX <= ui_coords[2] &&
-      mouseY >= ui_coords[1] &&
-      mouseY <= ui_coords[3])
-  {
-    if (ui1_open)
-    {
-      arrow_island = null;
-      show_arrow = false;
-    }
-    ui1_open = !ui1_open;
-  }
 
   if (mouseX >= ui_coords[2] &&
       mouseX <= ui_coords[2]*2 &&
@@ -368,7 +590,65 @@ void mousePressed() {
   {
     ui2_open = !ui2_open;
   }
+  else if (ui2_open)
+  {
+    if (mouseX >= ui_coords[2] &&
+        mouseY >= ui_coords[3] &&
+        mouseX <= ui_coords[2]*2 &&
+        mouseY <= ui_coords[3]*1.7)
+    {
+      curr_pop_year = ui_1980;
+      curr_year_colors = color_1980;
+      using_1980 = true;
+      using_2010 = false;
+      using_1994 = false;
+      using_2000 = false;
+    }
+    else if (mouseX >= ui_coords[2] &&
+        mouseY >= ui_coords[3]*1.7 &&
+        mouseX <= ui_coords[2]*2 &&
+        mouseY <= ui_coords[3]*2.4)
+    {
+      curr_pop_year = ui_1994;
+      curr_year_colors = color_1994;
+      using_1994 = true;
+      using_2010 = false;
+      using_1980 = false;
+      using_2000 = false;
+    }
+    else if (mouseX >= ui_coords[2] &&
+        mouseY >= ui_coords[3]*2.4 &&
+        mouseX <= ui_coords[2]*2 &&
+        mouseY <= ui_coords[3]*3.1)
+    {
+      curr_pop_year = ui_2000;
+      curr_year_colors = color_2000;
+      using_2000 = true;
+      using_2010 = false;
+      using_1994 = false;
+      using_1980 = false;
+    }
+    else if (mouseX >= ui_coords[2] &&
+        mouseY >= ui_coords[3]*3.1 &&
+        mouseX <= ui_coords[2]*2 &&
+        mouseY <= ui_coords[3]*3.8)
+    {
+      curr_pop_year = ui_2010;
+      curr_year_colors = color_2010;
+      using_2010 = true;
+      using_1980 = false;
+      using_1994 = false;
+      using_2000 = false;
+    }
+  }
 
+  if (mouseX >= ui_coords[0] && 
+      mouseX <= ui_coords[2] &&
+      mouseY >= ui_coords[1] &&
+      mouseY <= ui_coords[3])
+  {
+    ui1_open = !ui1_open;
+  }
   else if (ui1_open)
   {
     for (UIValue u : ui)
