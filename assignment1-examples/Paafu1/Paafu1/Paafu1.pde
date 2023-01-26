@@ -22,7 +22,31 @@ float minArea, maxArea;
 // Graphics objects
 PanZoomMap panZoomMap;
 
+UIValue[] ui;
+Float[] ui_coords = new Float[4];
+int num_islands;
+boolean ui1_open = false;
+boolean ui2_open = false;
+PFont ui_head;
+color ui_start_color, ui_end_color;
 
+public class IslandComparator implements Comparator<Float[]>
+{
+  @Override
+  public int compare(Float[] f1, Float[] f2)
+  {
+    return f2[2].compareTo(f1[2]);
+  }
+}
+
+public class PopulationComparator implements Comparator<Float[]>
+{
+  @Override
+  public int compare(Float[] f1, Float[] f2)
+  {
+    return f2[1].compareTo(f1[1]);
+  }
+}
 
 // === PROCESSING BUILT-IN FUNCTIONS ===
 ArrayList<Float[]> pairs;
@@ -60,40 +84,18 @@ void setup() {
   Collections.sort(pairs, new IslandComparator());
 }
 
-class UIValue
-{
-  String name;
-  float lon, lat, area, ulx, uly, brx, bry;
-  float curr_rad;
-  public UIValue(String name, float lat, float lon, float area)
-  {
-    this.name = name;
-    this.lon = lon;
-    this.lat = lat;
-    this.area = area;
-  }
-
-  public void setRectBounds(float ulx, float uly, float brx, float bry)
-  {
-    this.ulx = ulx;
-    this.uly = uly;
-    this.brx = brx;
-    this.bry = bry;
-  }
-
-  public void setRad(float rad)
-  {
-    this.curr_rad = rad;
-  }
-}
-
-UIValue[] ui;
-Float[] ui_coords = new Float[4];
-int num_islands;
-boolean ui_open = false;
-PFont ui_head;
+/* color will be based on population */
+ArrayList<Float[]> ui_1980;
+ArrayList<Float[]> ui_1994;
+ArrayList<Float[]> ui_2000;
+ArrayList<Float[]> ui_2010;
 void setup_ui_array()
 {
+  ui_1980 = new ArrayList<Float[]>();
+  ui_1994 = new ArrayList<Float[]>();
+  ui_2000 = new ArrayList<Float[]>();
+  ui_2010 = new ArrayList<Float[]>();
+
   ui_coords[0] = 0.0;
   ui_coords[1] = 0.0;
   ui_coords[2] = width / 7.0;
@@ -110,14 +112,42 @@ void setup_ui_array()
       cur.getFloat(2),
       populationTable.getRow(i).getFloat(6)
     );
+
+    ui[i].setPop(
+      populationTable.getRow(i).getFloat(2),
+      populationTable.getRow(i).getFloat(3),
+      populationTable.getRow(i).getFloat(4),
+      populationTable.getRow(i).getFloat(5)
+    );
+
+    float fi = (float) i;
+    float f80 = populationTable.getRow(i).getFloat(2);
+    if (Float.isNaN(f80)) f80 = 0;
+    ui_1980.add(new Float[]{fi, f80});
+    ui_1994.add(new Float[]{fi, populationTable.getRow(i).getFloat(3)});
+    ui_2000.add(new Float[]{fi, populationTable.getRow(i).getFloat(4)});
+    ui_2010.add(new Float[]{fi, populationTable.getRow(i).getFloat(5)});
+
+    Collections.sort(ui_1980, new PopulationComparator());
+    Collections.sort(ui_1994, new PopulationComparator());
+    Collections.sort(ui_2000, new PopulationComparator());
+    Collections.sort(ui_2010, new PopulationComparator());
+  }
+
+  curr_pop_year = ui_1980;
+
+  for (int i = 0; i < num_islands; i++)
+  {
+    println(curr_pop_year.get(i)[1]);
   }
 
   ui_head = createFont("Times New Roman", 12, true);
 }
 
+ArrayList<Float[]> curr_pop_year;
 void draw_ui()
 {
-  stroke(100);
+  stroke(80);
   fill(40);
   rect(
     ui_coords[0],
@@ -125,20 +155,33 @@ void draw_ui()
     ui_coords[2],
     ui_coords[3]
   );
+  rect(
+    ui_coords[2],
+    ui_coords[1],
+    ui_coords[2]*2,
+    ui_coords[3]
+  );
   fill(100, 200, 30);
   textAlign(CENTER);
   textFont(ui_head, 24);
   text("Islands (Click)", ui_coords[2]/2, ui_coords[3]/1.5);
+  text("Years (Click)", ui_coords[2] * 3 / 2, ui_coords[3] / 1.5);
   textFont(ui_head, 12);
   fill(40);
-  if (ui_open)
+  if (ui2_open)
   {
-    int curr_isle = 0;
+
+  }
+
+  if (ui1_open)
+  {
+    int counter = 0;
     float jump = (height - ui_coords[3]) / (num_islands*0.5);
     for (int i = 0; i < num_islands / 2; i++)
     {
       for (int j = 0; j < 2; j++)
       {
+        int curr_isle = curr_pop_year.get(counter)[0].intValue();
         ui[curr_isle].setRectBounds(
           j*ui_coords[2]*0.5,
           ui_coords[3] + i*jump,
@@ -177,7 +220,7 @@ void draw_ui()
           );
         }
           
-        curr_isle++;
+        counter++;
       }
     }
   }
@@ -220,29 +263,13 @@ void draw() {
   
   // draw the bounds of the map
   fill(40);
-  stroke(100);
+  stroke(80);
   rectMode(CORNERS);
   float x1 = panZoomMap.longitudeToScreenX(138.0);
   float y1 = panZoomMap.latitudeToScreenY(5.2);
   float x2 = panZoomMap.longitudeToScreenX(163.1);
   float y2 = panZoomMap.latitudeToScreenY(10.0);
   rect(x1, y1, x2, y2);
-  
-  // Example of drawing just one island.  You'll want to replace this with your own visualization.
-  
-  // the island of Weno (Moan) is located at 7°27′0″ N, 151°51′0″ E or in decimal (7.45, 151.85)
-  // let's draw a circle centered at that location.
-  // float cx = panZoomMap.longitudeToScreenX(151.85);
-  // float cy = panZoomMap.latitudeToScreenY(7.45);
-  
-  // using OpenStreetMap, I estimate the West edge of the island is at long=151.8376 and
-  // the East edge is at long=151.8376, a difference of just 0.0641 degrees.  We can use
-  // this value to create a circle that approximates the size of the island like below.
-  // However, it is a pretty small island--zoom in to make it bigger.
-  // float radius = panZoomMap.mapLengthToScreenLength(0.0641) / 2.0;
-  // fill(200,0,200);
-  // ellipseMode(RADIUS);
-  // circle(cx, cy, radius);
 
   /*
     Layout of the data is <name_string> <lat_float> <long_float>
@@ -303,16 +330,6 @@ void draw() {
   }
 }
 
-public class IslandComparator implements Comparator<Float[]>
-{
-  @Override
-  public int compare(Float[] f1, Float[] f2)
-  {
-    return f2[2].compareTo(f1[2]);
-  }
-}
-
-
 void keyPressed() {
   if (key == ' ') {
     println("current scale: ", panZoomMap.scale, " current translation: ", panZoomMap.translateX, "x", panZoomMap.translateY);
@@ -336,14 +353,23 @@ void mousePressed() {
       mouseY >= ui_coords[1] &&
       mouseY <= ui_coords[3])
   {
-    if (ui_open)
+    if (ui1_open)
     {
       arrow_island = null;
       show_arrow = false;
     }
-    ui_open = !ui_open;
+    ui1_open = !ui1_open;
   }
-  else if (ui_open)
+
+  if (mouseX >= ui_coords[2] &&
+      mouseX <= ui_coords[2]*2 &&
+      mouseY >= ui_coords[1] &&
+      mouseY <= ui_coords[3])
+  {
+    ui2_open = !ui2_open;
+  }
+
+  else if (ui1_open)
   {
     for (UIValue u : ui)
     {

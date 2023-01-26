@@ -137,10 +137,10 @@ public class PanZoomPage {
   {
     float scaleDelta = 1.0;
     if (e.getCount() > 0) {
-      scaleDelta = 1.3;
+      scaleDelta = 1.1;
     } 
     else if (e.getCount() < 0) {
-      scaleDelta = 0.7;
+      scaleDelta = 0.9;
     }
   
     if (scaleDelta != 1.0) {
