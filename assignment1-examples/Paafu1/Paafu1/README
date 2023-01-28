@@ -1,0 +1,36 @@
+Noah Hendrickson (hend0800)
+
+Part A: Got it.
+    Each island has a circle and name. 
+    The name stays a static size so they kind of overlap
+     when zoomed out, however, I think this makes it easier
+     to find the islands (in addition to other things I added for that)
+
+Part B: Got it.
+    The first channel is color and it represents population.
+    Darker green is higher population and white is low population. 
+    Using the lerpColor and a little finagling, there is a nice gradient
+     between the range. 
+    I had to mess with the interpolation a bit to get it so that there 
+     was a nice gradient because Weno was a big outlier in population,
+     and if I just simply used max and min, the gradient did not look
+     nearly as good.
+    The other channel is the size of the island circles. This is based
+     off of the area of each island. There are a few islands that overlap,
+     however, I wanted the bigger ones to still be relatively visible when
+     zoomed out and the only way I could do that is making them bigger.
+     
+Part C: Got it.
+    In addition to a legend, I also added two other tabs. 
+    The first tab lists the island from the most populated down to the least
+     populated. Each island can be clicked on and an arrow will show on the 
+     map pointing you to it. The second tab lets you change the census
+     year. Additionally, when clicked on an island in the islands tab, 
+     the population of that island for the year is in the last box of the years tab.
+    The area is now also added.
+    Also I thought it would be cool to make the legend move around as you open the tabs
+     so I did :)
+    I couldn't really figure out how to add an objective view of how the size changes
+     with area to the legend without just putting every island there, so I simply stated
+     that size changes with area, and also added a way to see the exact area of every 
+     island.

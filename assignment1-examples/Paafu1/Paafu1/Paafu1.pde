@@ -108,10 +108,8 @@ void setup_ui_array()
   color_2010 = new color[num_islands];
 
   ui_start_color = color(255, 255, 255);
-  ui_end_color = color(255, 0, 0);
+  ui_end_color = color(9, 107, 13);
   ui_mid_color = lerpColor(ui_start_color, ui_end_color, 0.5);
-
-  float thresh = 1500;
 
   ui_coords[0] = 0.0;
   ui_coords[1] = 0.0;
@@ -159,7 +157,6 @@ void setup_ui_array()
     float ui94 = ui[ui_1994.get(i)[0].intValue()].pop_1994;
     float ui00 = ui_2000.get(i)[1];
     float ui10 = ui_2010.get(i)[1];
-
 
     // float ui80norm = (ui80 - minPop1980) / (maxPop1980 - minPop1980);
     // float ui94norm = (ui94 - minPop1994) / (maxPop1994 - minPop1994);
@@ -213,14 +210,6 @@ void setup_ui_array()
       min = minPop2010;
     }
     float ui10norm = (ui10 - min) / (max-min);
-    if (ui10 > thresh)
-    {
-      println("Above Thresh", ui10norm);
-    } 
-    else 
-    {
-      println("Below Thresh", ui10norm);
-    }
 
     if (ui80 > thresh) 
     {
@@ -277,9 +266,142 @@ void setup_ui_array()
   ui_head = createFont("Times New Roman", 12, true);
 }
 
+float thresh = 1500;
+void draw_legend()
+{ 
+  float upleftx, uplefty, botrightx, botrighty;
+  float ulx, uly, brx, bry;
+  if (ui1_open && ui2_open)
+  {
+    upleftx = ui_coords[2];
+    uplefty = ui_coords[3]*4.5;
+    botrightx = ui_coords[2]+100;
+    botrighty = height-1;
+
+    ulx = ui_coords[2]+100;
+    uly = ui_coords[3]*4.5;
+    brx = ui_coords[2]*2;
+    bry = uly + 50;
+  }
+  else if (!ui1_open)
+  {
+    upleftx = 0;
+    uplefty = ui_coords[3];
+    botrightx = 100;
+    botrighty = height-1;
+
+    ulx = 100;
+    uly = ui_coords[3];
+    brx = ui_coords[2];
+    bry = uly + 50;
+  }
+  else
+  {
+    upleftx = ui_coords[2];
+    uplefty = ui_coords[3];
+    botrightx = ui_coords[2]+100;
+    botrighty = height-1;
+
+    ulx = ui_coords[2]+100;
+    uly = ui_coords[3];
+    brx = ui_coords[2]*2;
+    bry = uly + 50;
+  }
+
+  stroke(0);
+  fill(40);
+  rect(
+    upleftx,
+    uplefty,
+    botrightx,
+    botrighty
+  );
+
+  rect(
+    ulx, uly,
+    brx, bry
+  );
+  textFont(ui_head, 20);
+  fill(74, 176, 89);
+  text("Size ~ Area", ulx + (brx-ulx)/2, uly + 30);
+
+  loadPixels();
+
+  float thresh_norm = 0;
+  int jump = 0;
+  float max_pop = 0;
+  if (using_1980) 
+  {
+    max_pop = maxPop1980;
+    jump = floor((botrighty - uplefty) / (maxPop1980 / 1000));
+  }
+  else if (using_1994) 
+  {
+    max_pop = maxPop1994;
+    jump = floor((botrighty - uplefty) / (maxPop1994 / 1000));
+  }
+  else if (using_2000) 
+  {
+    max_pop = maxPop2000;
+    jump = floor((botrighty - uplefty) / (maxPop2000 / 1000));
+  }
+  else if (using_2010) 
+  {
+    max_pop = maxPop2010;
+    jump = floor((botrighty - uplefty) / (maxPop2010 / 1000));
+  }
+
+  float pixel_thresh = lerp(botrighty, uplefty, 0.4);
+  color startc = color(255, 0, 0);
+  color endc = color(0,0,0);
+  for (int i = floor(uplefty+1); i < botrighty; i++)
+  {
+    /* get thresh point for the lerp color */
+    // float pixel_norm = (i - )
+    float pixel_norm;
+    if (i < pixel_thresh) 
+    {
+      startc = ui_end_color;
+      endc = ui_mid_color;
+      pixel_norm = (i - uplefty) / (pixel_thresh - uplefty);
+    }
+    else 
+    {
+      startc = ui_mid_color;
+      endc = ui_start_color;
+      pixel_norm = (i - pixel_thresh) / (botrighty - pixel_thresh);
+    }
+    color c = lerpColor(startc, endc, pixel_norm);
+    for (int j = floor(upleftx+1); j < upleftx+50; j++)
+    {
+      pixels[i*width+j] = c;
+    }
+    int ind = floor(i*width + upleftx+50);
+    pixels[ind] = color(0,0,0);
+  }
+  updatePixels();
+
+  textFont(ui_head, 12);
+  textAlign(LEFT);
+  int count = 0;
+  int sub = 0;
+
+  for (int i = floor(uplefty+1); i < botrighty; i++)
+  {
+    if (count % jump == 0)
+    {
+      float f = max_pop - sub*1000;
+      String s = Float.toString(f);
+      text(s, upleftx+55, i+12);
+      sub++;
+    }
+    count++;
+  }
+}
+
 void draw_ui()
 {
-  stroke(80);
+  stroke(0);
   fill(40);
   rect(
     ui_coords[0],
@@ -290,54 +412,54 @@ void draw_ui()
   rect(
     ui_coords[2],
     ui_coords[1],
-    ui_coords[2]*2,
+    ui_coords[2]*2.2,
     ui_coords[3]
   );
-  fill(100, 200, 30);
+  fill(74, 176, 89);
   textAlign(CENTER);
   textFont(ui_head, 24);
   text("Islands (Click)", ui_coords[2]/2, ui_coords[3]/1.5);
-  text("Years (Click)", ui_coords[2] * 3 / 2, ui_coords[3] / 1.5);
+  text("Years (Click)", ui_coords[2] * 3.2 / 2, ui_coords[3] / 1.5);
   textFont(ui_head, 12);
   fill(40);
   if (ui2_open)
   { 
     if (using_1980)
-      fill(100, 100, 0);
+      fill(78, 78, 82);
     rect(
       ui_coords[2],
       ui_coords[3],
-      ui_coords[2]*2,
+      ui_coords[2]*2.2,
       ui_coords[3]*1.7
     );
     if (using_1980)
       fill(40);
     if (using_1994)
-      fill(100, 100, 0);
+      fill(78, 78, 82);
     rect(
       ui_coords[2],
       ui_coords[3]*1.7,
-      ui_coords[2]*2,
+      ui_coords[2]*2.2,
       ui_coords[3]*2.4
     );
     if (using_1994)
       fill(40);
     if (using_2000)
-      fill(100, 100, 0);
+      fill(78, 78, 82);
     rect(
       ui_coords[2],
       ui_coords[3]*2.4,
-      ui_coords[2]*2,
+      ui_coords[2]*2.2,
       ui_coords[3]*3.1
     );
     if (using_2000)
       fill(40);
     if (using_2010)
-      fill(100, 100, 0);
+      fill(78, 78, 82);
     rect(
       ui_coords[2],
       ui_coords[3]*3.1,
-      ui_coords[2]*2,
+      ui_coords[2]*2.2,
       ui_coords[3]*3.8
     );
     if (using_2010)
@@ -345,41 +467,53 @@ void draw_ui()
     rect(
       ui_coords[2],
       ui_coords[3]*3.8,
-      ui_coords[2]*2,
+      ui_coords[2]*2.2,
       ui_coords[3]*4.5
     );
-    fill(100, 200, 30);
+    fill(74, 176, 89);
     if (arrow_island != null)
     {
       if (using_1980)
       {
+        String s = arrow_island.name + ": " + 
+          arrow_island.pop_2010 + " / Area: " + arrow_island.area
+          + "km^2";
         text(
-          arrow_island.name + ": " + arrow_island.pop_1980, 
-          ui_coords[2] * 3 / 2, 
+          s, 
+          ui_coords[2] * 3.2 / 2, 
           ui_coords[3] * 4.25
         );
       }
       else if (using_1994)
       {
+        String s = arrow_island.name + ": " + 
+          arrow_island.pop_2010 + " / Area: " + arrow_island.area
+          + "km^2";
         text(
-          arrow_island.name + ": " + arrow_island.pop_1994, 
-          ui_coords[2] * 3 / 2, 
+          s, 
+          ui_coords[2] * 3.2 / 2, 
           ui_coords[3] * 4.25
         );
       }
       else if (using_2000)
       {
+        String s = arrow_island.name + ": " + 
+          arrow_island.pop_2010 + " / Area: " + arrow_island.area
+          + "km^2";
         text(
-          arrow_island.name + ": " + arrow_island.pop_2000, 
-          ui_coords[2] * 3 / 2, 
+          s, 
+          ui_coords[2] * 3.2 / 2, 
           ui_coords[3] * 4.25
         );
       }
       else if (using_2010)
       {
+        String s = arrow_island.name + ": " + 
+          arrow_island.pop_2010 + " / Area: " + arrow_island.area
+          + "km^2";
         text(
-          arrow_island.name + ": " + arrow_island.pop_2010, 
-          ui_coords[2] * 3 / 2, 
+          s, 
+          ui_coords[2] * 3.2 / 2, 
           ui_coords[3] * 4.25
         );
       }
@@ -388,14 +522,14 @@ void draw_ui()
     {
       text(
           "No Island Selected", 
-          ui_coords[2] * 3 / 2, 
+          ui_coords[2] * 3.2 / 2, 
           ui_coords[3] * 4.25
         );
     }
-    text("Population (1980)", ui_coords[2] * 3 / 2, ui_coords[3] * 1.45);
-    text("Population (1994)", ui_coords[2] * 3 / 2, ui_coords[3] * 2.15);
-    text("Population (2000)", ui_coords[2] * 3 / 2, ui_coords[3] * 2.85);
-    text("Population (2010)", ui_coords[2] * 3 / 2, ui_coords[3] * 3.55);
+    text("Population (1980)", ui_coords[2] * 3.2 / 2, ui_coords[3] * 1.45);
+    text("Population (1994)", ui_coords[2] * 3.2 / 2, ui_coords[3] * 2.15);
+    text("Population (2000)", ui_coords[2] * 3.2 / 2, ui_coords[3] * 2.85);
+    text("Population (2010)", ui_coords[2] * 3.2 / 2, ui_coords[3] * 3.55);
 
   }
   fill(40);
@@ -407,7 +541,7 @@ void draw_ui()
   if (ui1_open)
   {
     int counter = 0;
-    float jump = (height - ui_coords[3]) / (num_islands*0.5);
+    float jump = (height-1 - ui_coords[3]) / (num_islands*0.5);
     for (int i = 0; i < num_islands / 2; i++)
     {
       for (int j = 0; j < 2; j++)
@@ -420,7 +554,7 @@ void draw_ui()
           ui_coords[3] + (i+1)*jump
         );
         if (arrow_island != null && arrow_island.name.compareTo(ui[curr_isle].name) == 0)
-          fill(100, 100, 0);
+          fill(78, 78, 82);
         else
           fill(40);
         rect(
@@ -493,11 +627,11 @@ void draw_arrow()
 
 void draw() {
   // clear the screen
-  background(0);
+  background(99, 102, 117);
   
   // draw the bounds of the map
   fill(40);
-  stroke(80);
+  stroke(0);
   rectMode(CORNERS);
   float x1 = panZoomMap.longitudeToScreenX(138.0);
   float y1 = panZoomMap.latitudeToScreenY(5.2);
@@ -525,8 +659,6 @@ void draw() {
     float scaled_min = minArea / scale;
     float scaled_max = maxArea / scale;
 
-    // println(scaled_min, scaled_max);
-
     float area_normalized = (area - scaled_min) / (scaled_max - scaled_min);
 
     float rad = panZoomMap.mapLengthToScreenLength(lerp(scaled_min, scaled_max, area_normalized)) / 2.0;
@@ -537,13 +669,16 @@ void draw() {
     fill(ui[ind].curr_color);
     circle(cx, cy, rad);
   }
-
-  if (show_arrow)
+  for (int i = 0; i < num_islands; i++)
   {
-    draw_arrow();
-  }
+    Float[] f = pairs.get(i);
 
-  draw_ui();
+    float cx = panZoomMap.longitudeToScreenX(f[0]);
+    float cy = panZoomMap.latitudeToScreenY(f[1]);
+    fill(0);
+    textAlign(CENTER);
+    text(ui[f[3].intValue()].name, cx, cy);
+  }
 
   float m_lon = panZoomMap.screenXtoLongitude(mouseX);
   float m_lat = panZoomMap.screenYtoLatitude(mouseY);
@@ -552,9 +687,9 @@ void draw() {
       m_lat >= minLatitude &&
       m_lat <= maxLatitude)
   {
-    textFont(ui_head, 10);
+    textFont(ui_head, 12);
     textAlign(LEFT);
-    fill(100, 200, 30);
+    fill(0);
     String put = "" + m_lat + ", " + m_lon + "";
     text(
       put,
@@ -562,6 +697,14 @@ void draw() {
       mouseY
     );
   }
+
+  if (show_arrow)
+  {
+    draw_arrow();
+  }
+
+  draw_ui();
+  draw_legend();
 }
 
 void keyPressed() {
@@ -584,7 +727,7 @@ void mousePressed() {
   panZoomMap.mousePressed();
 
   if (mouseX >= ui_coords[2] &&
-      mouseX <= ui_coords[2]*2 &&
+      mouseX <= ui_coords[2]*2.2 &&
       mouseY >= ui_coords[1] &&
       mouseY <= ui_coords[3])
   {
@@ -594,7 +737,7 @@ void mousePressed() {
   {
     if (mouseX >= ui_coords[2] &&
         mouseY >= ui_coords[3] &&
-        mouseX <= ui_coords[2]*2 &&
+        mouseX <= ui_coords[2]*2.2 &&
         mouseY <= ui_coords[3]*1.7)
     {
       curr_pop_year = ui_1980;
@@ -606,7 +749,7 @@ void mousePressed() {
     }
     else if (mouseX >= ui_coords[2] &&
         mouseY >= ui_coords[3]*1.7 &&
-        mouseX <= ui_coords[2]*2 &&
+        mouseX <= ui_coords[2]*2.2 &&
         mouseY <= ui_coords[3]*2.4)
     {
       curr_pop_year = ui_1994;
@@ -618,7 +761,7 @@ void mousePressed() {
     }
     else if (mouseX >= ui_coords[2] &&
         mouseY >= ui_coords[3]*2.4 &&
-        mouseX <= ui_coords[2]*2 &&
+        mouseX <= ui_coords[2]*2.2 &&
         mouseY <= ui_coords[3]*3.1)
     {
       curr_pop_year = ui_2000;
@@ -630,7 +773,7 @@ void mousePressed() {
     }
     else if (mouseX >= ui_coords[2] &&
         mouseY >= ui_coords[3]*3.1 &&
-        mouseX <= ui_coords[2]*2 &&
+        mouseX <= ui_coords[2]*2.2 &&
         mouseY <= ui_coords[3]*3.8)
     {
       curr_pop_year = ui_2010;
