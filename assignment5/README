@@ -1,0 +1,34 @@
+Noah Hendrickson <hend0800>
+
+I would have done a voice over for the video,
+however, my mic is not very good at all so this will 
+have to do. 
+
+The first thing about my visualization is the volume probe. 
+The probe makes the beeping sound as it travels through the volume,
+and as the data changes, so does the pitch relative to the normalized data.
+You can raise and lower the probe with the arrow keys as well.
+
+On the lefthand side of the screen, I implemented a small UI.
+It includes a mute button if the beeping gets too grating and
+displays for the probes current data (not normalized) as well as,
+what will get me into the next addition, the ribbon data.
+
+I also added a way to control the ribbon visualization.
+I had some trouble with the texture of the ribbons, so only the color
+is changed and only the color based variable is displayed in the UI.
+Additionally, left arrow and right arrow will display only a single
+ribbon at a time and that ribbons average color data value will 
+be displayed on the left. Hitting tab will reset all to the original
+state. I wanted to do more with this, as well as a surface probe,
+but I had a lot of issues with the UI and kind of ran out of time on it.
+
+Really, I wanted to do a lot more with this, but this was my first time
+using unity (outside of last assignment) and I really got tripped up 
+on a lot of things and just didn't have a lot of time in the first 
+place so had to settle with this.
+
+Also the data being visualized is velocity magnitude for the ribbons,
+O2 for the smoke with a range of 0.2298 to 0.301 and only the lower end
+of that range having much visibility (because it looks cool) and raw 
+bulk of fuel for the ground variable.
